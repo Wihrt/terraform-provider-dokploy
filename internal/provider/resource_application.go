@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"regexp"
 	"strings"
 
 	"github.com/ahmedali6/terraform-provider-dokploy/internal/client"
@@ -22,6 +23,11 @@ import (
 
 var _ resource.Resource = &ApplicationResource{}
 var _ resource.ResourceWithImportState = &ApplicationResource{}
+
+var (
+	memoryFormatRegex = regexp.MustCompile(`^\d+[bBkKmMgG]$`)
+	cpuFormatRegex    = regexp.MustCompile(`^\d+(\.\d+)?$`)
+)
 
 func NewApplicationResource() resource.Resource {
 	return &ApplicationResource{}
@@ -501,18 +507,42 @@ func (r *ApplicationResource) Schema(_ context.Context, _ resource.SchemaRequest
 			"memory_limit": schema.StringAttribute{
 				Optional:    true,
 				Description: "Memory limit for the container (e.g., '512m', '1g').",
+				Validators: []validator.String{
+					stringvalidator.RegexMatches(
+						memoryFormatRegex,
+						"must be a non-negative integer followed by a unit suffix (b, k, m, g), e.g. '512m', '1g', '256M'",
+					),
+				},
 			},
 			"memory_reservation": schema.StringAttribute{
 				Optional:    true,
 				Description: "Memory reservation (soft limit) for the container (e.g., '256m').",
+				Validators: []validator.String{
+					stringvalidator.RegexMatches(
+						memoryFormatRegex,
+						"must be a non-negative integer followed by a unit suffix (b, k, m, g), e.g. '256m', '512M'",
+					),
+				},
 			},
 			"cpu_limit": schema.StringAttribute{
 				Optional:    true,
 				Description: "CPU limit for the container (e.g., '0.5', '1').",
+				Validators: []validator.String{
+					stringvalidator.RegexMatches(
+						cpuFormatRegex,
+						"must be a valid decimal number representing CPU units, e.g. '0.5', '1', '1.5'",
+					),
+				},
 			},
 			"cpu_reservation": schema.StringAttribute{
 				Optional:    true,
 				Description: "CPU reservation for the container (e.g., '0.25').",
+				Validators: []validator.String{
+					stringvalidator.RegexMatches(
+						cpuFormatRegex,
+						"must be a valid decimal number representing CPU units, e.g. '0.25', '0.5'",
+					),
+				},
 			},
 			"command": schema.StringAttribute{
 				Optional:    true,
