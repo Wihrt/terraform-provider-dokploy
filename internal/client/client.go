@@ -3608,6 +3608,7 @@ type Backup struct {
 	MongoID         string `json:"mongoId"`
 	ComposeID       string `json:"composeId"`
 	ServiceName     string `json:"serviceName"`
+	Metadata        string `json:"metadata"`
 }
 
 func (c *DokployClient) CreateBackup(backup Backup) (*Backup, error) {
@@ -3644,6 +3645,7 @@ func (c *DokployClient) CreateBackup(backup Backup) (*Backup, error) {
 	if backup.ServiceName != "" {
 		payload["serviceName"] = backup.ServiceName
 	}
+	payload["metadata"] = backup.Metadata
 
 	resp, err := c.doRequest("POST", "backup.create", payload)
 	if err != nil {
@@ -3731,6 +3733,7 @@ func (c *DokployClient) UpdateBackup(backup Backup) (*Backup, error) {
 		"database":      backup.Database,
 		"databaseType":  backup.DatabaseType,
 		"serviceName":   backup.ServiceName,
+		"metadata":      backup.Metadata,
 	}
 
 	if backup.KeepLatestCount > 0 {
@@ -5351,6 +5354,7 @@ type VolumeBackup struct {
 	Enabled         bool    `json:"enabled"`
 	DestinationID   string  `json:"destinationId"`
 	CreatedAt       string  `json:"createdAt"`
+	Metadata        string  `json:"metadata"`
 	// Service IDs (only one will be set based on serviceType)
 	ApplicationID *string `json:"applicationId"`
 	PostgresID    *string `json:"postgresId"`
@@ -5380,6 +5384,7 @@ func (c *DokployClient) CreateVolumeBackup(backup VolumeBackup) (*VolumeBackup, 
 	}
 	payload["turnOff"] = backup.TurnOff
 	payload["enabled"] = backup.Enabled
+	payload["metadata"] = backup.Metadata
 
 	// Set the appropriate service ID based on service type
 	if backup.ApplicationID != nil {
@@ -5448,6 +5453,7 @@ func (c *DokployClient) UpdateVolumeBackup(backup VolumeBackup) (*VolumeBackup, 
 	}
 	payload["turnOff"] = backup.TurnOff
 	payload["enabled"] = backup.Enabled
+	payload["metadata"] = backup.Metadata
 
 	resp, err := c.doRequest("POST", "volumeBackups.update", payload)
 	if err != nil {

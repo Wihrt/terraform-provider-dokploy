@@ -43,6 +43,7 @@ type BackupResourceModel struct {
 	Prefix          types.String `tfsdk:"prefix"`
 	Database        types.String `tfsdk:"database"`
 	KeepLatestCount types.Int64  `tfsdk:"keep_latest_count"`
+	Metadata        types.String `tfsdk:"metadata"`
 }
 
 func (r *BackupResource) Metadata(_ context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
@@ -128,6 +129,12 @@ func (r *BackupResource) Schema(_ context.Context, _ resource.SchemaRequest, res
 				Default:     int64default.StaticInt64(30),
 				Description: "Number of recent backups to keep (older ones are deleted).",
 			},
+			"metadata": schema.StringAttribute{
+				Optional:    true,
+				Computed:    true,
+				Default:     stringdefault.StaticString(""),
+				Description: "Optional metadata string for the backup.",
+			},
 		},
 	}
 }
@@ -187,6 +194,7 @@ func (r *BackupResource) Create(ctx context.Context, req resource.CreateRequest,
 		Database:        plan.Database.ValueString(),
 		KeepLatestCount: int(plan.KeepLatestCount.ValueInt64()),
 		BackupType:      backupType,
+		Metadata:        plan.Metadata.ValueString(),
 	}
 
 	switch backupType {
@@ -227,6 +235,7 @@ func (r *BackupResource) Create(ctx context.Context, req resource.CreateRequest,
 	plan.Database = types.StringValue(createdBackup.Database)
 	plan.KeepLatestCount = types.Int64Value(int64(createdBackup.KeepLatestCount))
 	plan.BackupType = types.StringValue(createdBackup.BackupType)
+	plan.Metadata = types.StringValue(createdBackup.Metadata)
 
 	if createdBackup.ServiceName != "" {
 		plan.ServiceName = types.StringValue(createdBackup.ServiceName)
@@ -261,6 +270,7 @@ func (r *BackupResource) Read(ctx context.Context, req resource.ReadRequest, res
 	state.Database = types.StringValue(backup.Database)
 	state.KeepLatestCount = types.Int64Value(int64(backup.KeepLatestCount))
 	state.BackupType = types.StringValue(backup.BackupType)
+	state.Metadata = types.StringValue(backup.Metadata)
 
 	// Set database_type for both database and compose backups (API returns it for both)
 	if backup.DatabaseType != "" {
@@ -312,6 +322,7 @@ func (r *BackupResource) Update(ctx context.Context, req resource.UpdateRequest,
 		Prefix:          plan.Prefix.ValueString(),
 		Database:        plan.Database.ValueString(),
 		KeepLatestCount: int(plan.KeepLatestCount.ValueInt64()),
+		Metadata:        plan.Metadata.ValueString(),
 	}
 
 	// Set database type for the update API
@@ -337,6 +348,7 @@ func (r *BackupResource) Update(ctx context.Context, req resource.UpdateRequest,
 	plan.Prefix = types.StringValue(updatedBackup.Prefix)
 	plan.Database = types.StringValue(updatedBackup.Database)
 	plan.KeepLatestCount = types.Int64Value(int64(updatedBackup.KeepLatestCount))
+	plan.Metadata = types.StringValue(updatedBackup.Metadata)
 
 	if updatedBackup.ServiceName != "" {
 		plan.ServiceName = types.StringValue(updatedBackup.ServiceName)

@@ -13,6 +13,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/int64default"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringdefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -44,6 +45,7 @@ type VolumeBackupResourceModel struct {
 	KeepLatestCount types.Int64  `tfsdk:"keep_latest_count"`
 	Enabled         types.Bool   `tfsdk:"enabled"`
 	CreatedAt       types.String `tfsdk:"created_at"`
+	Metadata        types.String `tfsdk:"metadata"`
 }
 
 func (r *VolumeBackupResource) Metadata(_ context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
@@ -131,6 +133,12 @@ func (r *VolumeBackupResource) Schema(_ context.Context, _ resource.SchemaReques
 					stringplanmodifier.UseStateForUnknown(),
 				},
 			},
+			"metadata": schema.StringAttribute{
+				Optional:    true,
+				Computed:    true,
+				Default:     stringdefault.StaticString(""),
+				Description: "Optional metadata string for the volume backup.",
+			},
 		},
 	}
 }
@@ -175,6 +183,7 @@ func (r *VolumeBackupResource) Create(ctx context.Context, req resource.CreateRe
 		TurnOff:         plan.TurnOff.ValueBool(),
 		KeepLatestCount: int(plan.KeepLatestCount.ValueInt64()),
 		Enabled:         plan.Enabled.ValueBool(),
+		Metadata:        plan.Metadata.ValueString(),
 	}
 
 	if !plan.ServiceName.IsNull() && plan.ServiceName.ValueString() != "" {
@@ -212,6 +221,7 @@ func (r *VolumeBackupResource) Create(ctx context.Context, req resource.CreateRe
 	plan.TurnOff = types.BoolValue(created.TurnOff)
 	plan.KeepLatestCount = types.Int64Value(int64(created.KeepLatestCount))
 	plan.Enabled = types.BoolValue(created.Enabled)
+	plan.Metadata = types.StringValue(created.Metadata)
 
 	if created.ServiceName != nil && *created.ServiceName != "" {
 		plan.ServiceName = types.StringValue(*created.ServiceName)
@@ -250,6 +260,7 @@ func (r *VolumeBackupResource) Read(ctx context.Context, req resource.ReadReques
 	state.KeepLatestCount = types.Int64Value(int64(backup.KeepLatestCount))
 	state.Enabled = types.BoolValue(backup.Enabled)
 	state.CreatedAt = types.StringValue(backup.CreatedAt)
+	state.Metadata = types.StringValue(backup.Metadata)
 
 	// Extract service_id from the appropriate field
 	switch backup.ServiceType {
@@ -318,6 +329,7 @@ func (r *VolumeBackupResource) Update(ctx context.Context, req resource.UpdateRe
 		TurnOff:         plan.TurnOff.ValueBool(),
 		KeepLatestCount: int(plan.KeepLatestCount.ValueInt64()),
 		Enabled:         plan.Enabled.ValueBool(),
+		Metadata:        plan.Metadata.ValueString(),
 	}
 
 	if !plan.ServiceName.IsNull() && plan.ServiceName.ValueString() != "" {
@@ -340,6 +352,7 @@ func (r *VolumeBackupResource) Update(ctx context.Context, req resource.UpdateRe
 	plan.TurnOff = types.BoolValue(updated.TurnOff)
 	plan.KeepLatestCount = types.Int64Value(int64(updated.KeepLatestCount))
 	plan.Enabled = types.BoolValue(updated.Enabled)
+	plan.Metadata = types.StringValue(updated.Metadata)
 
 	if updated.ServiceName != nil && *updated.ServiceName != "" {
 		plan.ServiceName = types.StringValue(*updated.ServiceName)
