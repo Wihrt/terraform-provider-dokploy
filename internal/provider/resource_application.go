@@ -1710,16 +1710,13 @@ func readApplicationIntoState(state *ApplicationResourceModel, app *client.Appli
 	state.RailpackVersion = types.StringValue(app.RailpackVersion)
 	state.IsStaticSpa = types.BoolValue(app.IsStaticSpa)
 
-	// Environment fields - only update if they were set in config
-	if !state.Env.IsNull() {
-		if app.Env != "" {
-			state.Env = types.StringValue(app.Env)
-		}
+	// Environment fields - update state whenever the field was previously set or the API
+	// returns a non-empty value. This correctly detects when env is cleared (API returns "").
+	if !state.Env.IsNull() || app.Env != "" {
+		state.Env = types.StringValue(app.Env)
 	}
-	if !state.BuildArgs.IsNull() {
-		if app.BuildArgs != "" {
-			state.BuildArgs = types.StringValue(app.BuildArgs)
-		}
+	if !state.BuildArgs.IsNull() || app.BuildArgs != "" {
+		state.BuildArgs = types.StringValue(app.BuildArgs)
 	}
 	state.CreateEnvFile = types.BoolValue(app.CreateEnvFile)
 

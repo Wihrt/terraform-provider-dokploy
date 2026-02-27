@@ -1694,10 +1694,8 @@ func (c *DokployClient) CreateCompose(comp Compose) (*Compose, error) {
 		updatePayload["giteaBuildPath"] = comp.GiteaBuildPath
 	}
 
-	// Environment variables.
-	if comp.Env != "" {
-		updatePayload["env"] = comp.Env
-	}
+	// Environment variables - always send to allow clearing.
+	updatePayload["env"] = comp.Env
 
 	// Advanced configuration
 	if comp.Command != "" {
@@ -4040,9 +4038,8 @@ func (c *DokployClient) UpdatePostgres(postgres Postgres) (*Postgres, error) {
 	if postgres.Command != "" {
 		payload["command"] = postgres.Command
 	}
-	if postgres.Env != "" {
-		payload["env"] = postgres.Env
-	}
+	// Always send env to allow clearing it (empty string is valid).
+	payload["env"] = postgres.Env
 	if postgres.MemoryReservation != "" {
 		payload["memoryReservation"] = postgres.MemoryReservation
 	}
@@ -4195,9 +4192,8 @@ func (c *DokployClient) UpdateMySQL(mysql MySQL) (*MySQL, error) {
 	if mysql.Command != "" {
 		payload["command"] = mysql.Command
 	}
-	if mysql.Env != "" {
-		payload["env"] = mysql.Env
-	}
+	// Always send env to allow clearing it (empty string is valid).
+	payload["env"] = mysql.Env
 	if mysql.MemoryReservation != "" {
 		payload["memoryReservation"] = mysql.MemoryReservation
 	}
@@ -4350,9 +4346,8 @@ func (c *DokployClient) UpdateMariaDB(mariadb MariaDB) (*MariaDB, error) {
 	if mariadb.Command != "" {
 		payload["command"] = mariadb.Command
 	}
-	if mariadb.Env != "" {
-		payload["env"] = mariadb.Env
-	}
+	// Always send env to allow clearing it (empty string is valid).
+	payload["env"] = mariadb.Env
 	if mariadb.MemoryReservation != "" {
 		payload["memoryReservation"] = mariadb.MemoryReservation
 	}
@@ -4502,9 +4497,8 @@ func (c *DokployClient) UpdateMongoDB(mongo MongoDB) (*MongoDB, error) {
 	if mongo.Command != "" {
 		payload["command"] = mongo.Command
 	}
-	if mongo.Env != "" {
-		payload["env"] = mongo.Env
-	}
+	// Always send env to allow clearing it (empty string is valid).
+	payload["env"] = mongo.Env
 	if mongo.MemoryReservation != "" {
 		payload["memoryReservation"] = mongo.MemoryReservation
 	}
@@ -4647,9 +4641,8 @@ func (c *DokployClient) UpdateRedis(redis Redis) (*Redis, error) {
 	if redis.Command != "" {
 		payload["command"] = redis.Command
 	}
-	if redis.Env != "" {
-		payload["env"] = redis.Env
-	}
+	// Always send env to allow clearing it (empty string is valid).
+	payload["env"] = redis.Env
 	if redis.MemoryReservation != "" {
 		payload["memoryReservation"] = redis.MemoryReservation
 	}
