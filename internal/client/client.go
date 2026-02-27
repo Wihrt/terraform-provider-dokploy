@@ -1882,10 +1882,8 @@ func (c *DokployClient) UpdateCompose(comp Compose) (*Compose, error) {
 		payload["giteaBuildPath"] = comp.GiteaBuildPath
 	}
 
-	// Environment variables.
-	if comp.Env != "" {
-		payload["env"] = comp.Env
-	}
+	// Environment variables - always send to allow clearing.
+	payload["env"] = comp.Env
 
 	// Advanced configuration
 	if comp.Command != "" {
@@ -3609,22 +3607,23 @@ func (c *DokployClient) ListDestinations() ([]Destination, error) {
 
 // Backup represents a scheduled backup configuration.
 type Backup struct {
-	BackupID        string `json:"backupId"`
-	AppName         string `json:"appName"`
-	Schedule        string `json:"schedule"`
-	Enabled         bool   `json:"enabled"`
-	Database        string `json:"database"`
-	Prefix          string `json:"prefix"`
-	DestinationID   string `json:"destinationId"`
-	KeepLatestCount int    `json:"keepLatestCount"`
-	BackupType      string `json:"backupType"`   // "database" or "compose"
-	DatabaseType    string `json:"databaseType"` // "postgres", "mysql", "mariadb", "mongo"
-	PostgresID      string `json:"postgresId"`
-	MysqlID         string `json:"mysqlId"`
-	MariadbID       string `json:"mariadbId"`
-	MongoID         string `json:"mongoId"`
-	ComposeID       string `json:"composeId"`
-	ServiceName     string `json:"serviceName"`
+	BackupID        string      `json:"backupId"`
+	AppName         string      `json:"appName"`
+	Schedule        string      `json:"schedule"`
+	Enabled         bool        `json:"enabled"`
+	Database        string      `json:"database"`
+	Prefix          string      `json:"prefix"`
+	DestinationID   string      `json:"destinationId"`
+	KeepLatestCount int         `json:"keepLatestCount"`
+	BackupType      string      `json:"backupType"`   // "database" or "compose"
+	DatabaseType    string      `json:"databaseType"` // "postgres", "mysql", "mariadb", "mongo"
+	PostgresID      string      `json:"postgresId"`
+	MysqlID         string      `json:"mysqlId"`
+	MariadbID       string      `json:"mariadbId"`
+	MongoID         string      `json:"mongoId"`
+	ComposeID       string      `json:"composeId"`
+	ServiceName     string      `json:"serviceName"`
+	Metadata        interface{} `json:"metadata"`
 }
 
 func (c *DokployClient) CreateBackup(backup Backup) (*Backup, error) {
@@ -3660,6 +3659,9 @@ func (c *DokployClient) CreateBackup(backup Backup) (*Backup, error) {
 	}
 	if backup.ServiceName != "" {
 		payload["serviceName"] = backup.ServiceName
+	}
+	if backup.Metadata != nil {
+		payload["metadata"] = backup.Metadata
 	}
 
 	resp, err := c.doRequest("POST", "backup.create", payload)
@@ -3752,6 +3754,9 @@ func (c *DokployClient) UpdateBackup(backup Backup) (*Backup, error) {
 
 	if backup.KeepLatestCount > 0 {
 		payload["keepLatestCount"] = backup.KeepLatestCount
+	}
+	if backup.Metadata != nil {
+		payload["metadata"] = backup.Metadata
 	}
 
 	resp, err := c.doRequest("POST", "backup.update", payload)
@@ -4702,20 +4707,22 @@ type GitlabProviderListItem struct {
 
 // GitlabProvider is the full structure used for create/update operations.
 type GitlabProvider struct {
-	ID             string `json:"gitlabId"`
-	GitProviderId  string `json:"gitProviderId"`
-	Name           string `json:"name"`
-	GitlabUrl      string `json:"gitlabUrl"`
-	ApplicationId  string `json:"applicationId"`
-	RedirectUri    string `json:"redirectUri"`
-	Secret         string `json:"secret"`
-	AccessToken    string `json:"accessToken"`
-	RefreshToken   string `json:"refreshToken"`
-	GroupName      string `json:"groupName"`
-	ExpiresAt      int64  `json:"expiresAt"`
-	AuthId         string `json:"authId"`
-	OrganizationID string `json:"organizationId"`
-	CreatedAt      string `json:"createdAt"`
+	ID                string          `json:"gitlabId"`
+	GitProviderId     string          `json:"gitProviderId"`
+	GitProvider       GitProviderInfo `json:"gitProvider"`
+	Name              string          `json:"name"`
+	GitlabUrl         string          `json:"gitlabUrl"`
+	GitlabInternalUrl string          `json:"gitlabInternalUrl"`
+	ApplicationId     string          `json:"applicationId"`
+	RedirectUri       string          `json:"redirectUri"`
+	Secret            string          `json:"secret"`
+	AccessToken       string          `json:"accessToken"`
+	RefreshToken      string          `json:"refreshToken"`
+	GroupName         string          `json:"groupName"`
+	ExpiresAt         int64           `json:"expiresAt"`
+	AuthId            string          `json:"authId"`
+	OrganizationID    string          `json:"organizationId"`
+	CreatedAt         string          `json:"createdAt"`
 }
 
 func (c *DokployClient) CreateGitlabProvider(provider GitlabProvider) (*GitlabProvider, error) {
@@ -4746,6 +4753,9 @@ func (c *DokployClient) CreateGitlabProvider(provider GitlabProvider) (*GitlabPr
 	if provider.ExpiresAt != 0 {
 		payload["expiresAt"] = provider.ExpiresAt
 	}
+	if provider.GitlabInternalUrl != "" {
+		payload["gitlabInternalUrl"] = provider.GitlabInternalUrl
+	}
 
 	resp, err := c.doRequest("POST", "gitlab.create", payload)
 	if err != nil {
@@ -4755,6 +4765,9 @@ func (c *DokployClient) CreateGitlabProvider(provider GitlabProvider) (*GitlabPr
 	// Try to unmarshal the response
 	var result GitlabProvider
 	if err := json.Unmarshal(resp, &result); err == nil && result.ID != "" {
+		if result.GitProviderId == "" && result.GitProvider.GitProviderId != "" {
+			result.GitProviderId = result.GitProvider.GitProviderId
+		}
 		return &result, nil
 	}
 
@@ -4763,6 +4776,9 @@ func (c *DokployClient) CreateGitlabProvider(provider GitlabProvider) (*GitlabPr
 		GitlabProvider GitlabProvider `json:"gitlab"`
 	}
 	if err := json.Unmarshal(resp, &wrapper); err == nil && wrapper.GitlabProvider.ID != "" {
+		if wrapper.GitlabProvider.GitProviderId == "" && wrapper.GitlabProvider.GitProvider.GitProviderId != "" {
+			wrapper.GitlabProvider.GitProviderId = wrapper.GitlabProvider.GitProvider.GitProviderId
+		}
 		return &wrapper.GitlabProvider, nil
 	}
 
@@ -4795,18 +4811,32 @@ func (c *DokployClient) GetGitlabProvider(id string) (*GitlabProvider, error) {
 	if err := json.Unmarshal(resp, &result); err != nil {
 		return nil, err
 	}
+	// The gitlab.one endpoint may return gitProviderId nested in a gitProvider object.
+	// Fall back to the nested value when the top-level field is empty.
+	if result.GitProviderId == "" && result.GitProvider.GitProviderId != "" {
+		result.GitProviderId = result.GitProvider.GitProviderId
+	}
+	if result.Name == "" && result.GitProvider.Name != "" {
+		result.Name = result.GitProvider.Name
+	}
+	if result.OrganizationID == "" && result.GitProvider.OrganizationID != "" {
+		result.OrganizationID = result.GitProvider.OrganizationID
+	}
+	if result.CreatedAt == "" && result.GitProvider.CreatedAt != "" {
+		result.CreatedAt = result.GitProvider.CreatedAt
+	}
 	return &result, nil
 }
 
 func (c *DokployClient) UpdateGitlabProvider(provider GitlabProvider) (*GitlabProvider, error) {
+	// gitlabId, gitlabUrl, gitProviderId, name are required by the API.
 	payload := map[string]interface{}{
-		"gitlabId": provider.ID,
-		"name":     provider.Name,
+		"gitlabId":      provider.ID,
+		"name":          provider.Name,
+		"gitlabUrl":     provider.GitlabUrl,
+		"gitProviderId": provider.GitProviderId,
 	}
 
-	if provider.GitlabUrl != "" {
-		payload["gitlabUrl"] = provider.GitlabUrl
-	}
 	if provider.ApplicationId != "" {
 		payload["applicationId"] = provider.ApplicationId
 	}
@@ -4828,8 +4858,8 @@ func (c *DokployClient) UpdateGitlabProvider(provider GitlabProvider) (*GitlabPr
 	if provider.ExpiresAt != 0 {
 		payload["expiresAt"] = provider.ExpiresAt
 	}
-	if provider.GitProviderId != "" {
-		payload["gitProviderId"] = provider.GitProviderId
+	if provider.GitlabInternalUrl != "" {
+		payload["gitlabInternalUrl"] = provider.GitlabInternalUrl
 	}
 	if provider.AuthId != "" {
 		payload["authId"] = provider.AuthId
@@ -5455,6 +5485,8 @@ func (c *DokployClient) UpdateVolumeBackup(backup VolumeBackup) (*VolumeBackup, 
 		"prefix":         backup.Prefix,
 		"cronExpression": backup.CronExpression,
 		"destinationId":  backup.DestinationID,
+		"serviceType":    backup.ServiceType,
+		"appName":        backup.AppName,
 	}
 
 	if backup.ServiceName != nil && *backup.ServiceName != "" {
@@ -5465,6 +5497,29 @@ func (c *DokployClient) UpdateVolumeBackup(backup VolumeBackup) (*VolumeBackup, 
 	}
 	payload["turnOff"] = backup.TurnOff
 	payload["enabled"] = backup.Enabled
+
+	// Include service IDs so the API can identify the correct service
+	if backup.ApplicationID != nil {
+		payload["applicationId"] = *backup.ApplicationID
+	}
+	if backup.PostgresID != nil {
+		payload["postgresId"] = *backup.PostgresID
+	}
+	if backup.MysqlID != nil {
+		payload["mysqlId"] = *backup.MysqlID
+	}
+	if backup.MariadbID != nil {
+		payload["mariadbId"] = *backup.MariadbID
+	}
+	if backup.MongoID != nil {
+		payload["mongoId"] = *backup.MongoID
+	}
+	if backup.RedisID != nil {
+		payload["redisId"] = *backup.RedisID
+	}
+	if backup.ComposeID != nil {
+		payload["composeId"] = *backup.ComposeID
+	}
 
 	resp, err := c.doRequest("POST", "volumeBackups.update", payload)
 	if err != nil {
