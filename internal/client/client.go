@@ -2401,23 +2401,27 @@ func (c *DokployClient) DeleteDatabaseWithType(id, dbType string) error {
 // --- Domain ---
 
 type Domain struct {
-	ID              string `json:"domainId"`
-	ApplicationID   string `json:"applicationId"`
-	ComposeID       string `json:"composeId"`
-	ServiceName     string `json:"serviceName"`
-	Host            string `json:"host"`
-	Path            string `json:"path"`
-	Port            int64  `json:"port"`
-	HTTPS           bool   `json:"https"`
-	CertificateType string `json:"certificateType"`
+	ID                 string `json:"domainId"`
+	ApplicationID      string `json:"applicationId"`
+	ComposeID          string `json:"composeId"`
+	ServiceName        string `json:"serviceName"`
+	Host               string `json:"host"`
+	Path               string `json:"path"`
+	Port               int64  `json:"port"`
+	HTTPS              bool   `json:"https"`
+	CertificateType    string `json:"certificateType"`
+	CustomCertResolver string `json:"customCertResolver"`
+	InternalPath       string `json:"internalPath"`
+	StripPath          bool   `json:"stripPath"`
 }
 
 func (c *DokployClient) CreateDomain(domain Domain) (*Domain, error) {
 	payload := map[string]interface{}{
-		"host":  domain.Host,
-		"path":  domain.Path,
-		"port":  domain.Port,
-		"https": domain.HTTPS,
+		"host":      domain.Host,
+		"path":      domain.Path,
+		"port":      domain.Port,
+		"https":     domain.HTTPS,
+		"stripPath": domain.StripPath,
 	}
 	// Set certificate type based on HTTPS setting
 	if domain.HTTPS {
@@ -2428,6 +2432,12 @@ func (c *DokployClient) CreateDomain(domain Domain) (*Domain, error) {
 		}
 	} else {
 		payload["certificateType"] = "none"
+	}
+	if domain.CustomCertResolver != "" {
+		payload["customCertResolver"] = domain.CustomCertResolver
+	}
+	if domain.InternalPath != "" {
+		payload["internalPath"] = domain.InternalPath
 	}
 	if domain.ApplicationID != "" {
 		payload["applicationId"] = domain.ApplicationID
@@ -2512,6 +2522,7 @@ func (c *DokployClient) UpdateDomain(domain Domain) (*Domain, error) {
 		"port":        domain.Port,
 		"https":       domain.HTTPS,
 		"serviceName": domain.ServiceName,
+		"stripPath":   domain.StripPath,
 	}
 	// Set certificate type based on HTTPS setting
 	if domain.HTTPS {
@@ -2522,6 +2533,12 @@ func (c *DokployClient) UpdateDomain(domain Domain) (*Domain, error) {
 		}
 	} else {
 		payload["certificateType"] = "none"
+	}
+	if domain.CustomCertResolver != "" {
+		payload["customCertResolver"] = domain.CustomCertResolver
+	}
+	if domain.InternalPath != "" {
+		payload["internalPath"] = domain.InternalPath
 	}
 	resp, err := c.doRequest("POST", "domain.update", payload)
 	if err != nil {

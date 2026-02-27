@@ -85,9 +85,9 @@ func (r *BackupResource) Schema(_ context.Context, _ resource.SchemaRequest, res
 			},
 			"database_type": schema.StringAttribute{
 				Optional:    true,
-				Description: "Type of database: postgres, mysql, mariadb, or mongo. Required when backup_type is 'database'.",
+				Description: "Type of database: postgres, mysql, mariadb, mongo, or web-server. Required when backup_type is 'database'.",
 				Validators: []validator.String{
-					stringvalidator.OneOf("postgres", "mysql", "mariadb", "mongo"),
+					stringvalidator.OneOf("postgres", "mysql", "mariadb", "mongo", "web-server"),
 				},
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplace(),

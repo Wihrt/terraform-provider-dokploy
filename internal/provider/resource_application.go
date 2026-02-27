@@ -114,10 +114,10 @@ type ApplicationResourceModel struct {
 	// Runtime configuration
 	AutoDeploy        types.Bool   `tfsdk:"auto_deploy"`
 	Replicas          types.Int64  `tfsdk:"replicas"`
-	MemoryLimit       types.Int64  `tfsdk:"memory_limit"`
-	MemoryReservation types.Int64  `tfsdk:"memory_reservation"`
-	CpuLimit          types.Int64  `tfsdk:"cpu_limit"`
-	CpuReservation    types.Int64  `tfsdk:"cpu_reservation"`
+	MemoryLimit       types.String `tfsdk:"memory_limit"`
+	MemoryReservation types.String `tfsdk:"memory_reservation"`
+	CpuLimit          types.String `tfsdk:"cpu_limit"`
+	CpuReservation    types.String `tfsdk:"cpu_reservation"`
 	Command           types.String `tfsdk:"command"`
 	Args              types.String `tfsdk:"args"`
 
@@ -498,21 +498,21 @@ func (r *ApplicationResource) Schema(_ context.Context, _ resource.SchemaRequest
 					int64planmodifier.UseStateForUnknown(),
 				},
 			},
-			"memory_limit": schema.Int64Attribute{
+			"memory_limit": schema.StringAttribute{
 				Optional:    true,
-				Description: "Memory limit in bytes. Example: 536870912 (512MB).",
+				Description: "Memory limit for the container (e.g., '512m', '1g').",
 			},
-			"memory_reservation": schema.Int64Attribute{
+			"memory_reservation": schema.StringAttribute{
 				Optional:    true,
-				Description: "Memory reservation (soft limit) in bytes.",
+				Description: "Memory reservation (soft limit) for the container (e.g., '256m').",
 			},
-			"cpu_limit": schema.Int64Attribute{
+			"cpu_limit": schema.StringAttribute{
 				Optional:    true,
-				Description: "CPU limit in nanocores. Example: 1000000000 (1 CPU).",
+				Description: "CPU limit for the container (e.g., '0.5', '1').",
 			},
-			"cpu_reservation": schema.Int64Attribute{
+			"cpu_reservation": schema.StringAttribute{
 				Optional:    true,
-				Description: "CPU reservation in nanocores.",
+				Description: "CPU reservation for the container (e.g., '0.25').",
 			},
 			"command": schema.StringAttribute{
 				Optional:    true,
@@ -569,9 +569,9 @@ func (r *ApplicationResource) Schema(_ context.Context, _ resource.SchemaRequest
 			"preview_certificate_type": schema.StringAttribute{
 				Optional:    true,
 				Computed:    true,
-				Description: "Certificate type for preview deployments: letsencrypt, none.",
+				Description: "Certificate type for preview deployments: letsencrypt, none, or custom.",
 				Validators: []validator.String{
-					stringvalidator.OneOf("letsencrypt", "none"),
+					stringvalidator.OneOf("letsencrypt", "none", "custom"),
 				},
 			},
 			"preview_custom_cert_resolver": schema.StringAttribute{
@@ -984,16 +984,16 @@ func (r *ApplicationResource) updateGeneralSettings(appID string, plan *Applicat
 		generalApp.Replicas = int(plan.Replicas.ValueInt64())
 	}
 	if !plan.MemoryLimit.IsNull() && !plan.MemoryLimit.IsUnknown() {
-		generalApp.MemoryLimit = json.Number(fmt.Sprintf("%d", plan.MemoryLimit.ValueInt64()))
+		generalApp.MemoryLimit = json.Number(plan.MemoryLimit.ValueString())
 	}
 	if !plan.MemoryReservation.IsNull() && !plan.MemoryReservation.IsUnknown() {
-		generalApp.MemoryReservation = json.Number(fmt.Sprintf("%d", plan.MemoryReservation.ValueInt64()))
+		generalApp.MemoryReservation = json.Number(plan.MemoryReservation.ValueString())
 	}
 	if !plan.CpuLimit.IsNull() && !plan.CpuLimit.IsUnknown() {
-		generalApp.CpuLimit = json.Number(fmt.Sprintf("%d", plan.CpuLimit.ValueInt64()))
+		generalApp.CpuLimit = json.Number(plan.CpuLimit.ValueString())
 	}
 	if !plan.CpuReservation.IsNull() && !plan.CpuReservation.IsUnknown() {
-		generalApp.CpuReservation = json.Number(fmt.Sprintf("%d", plan.CpuReservation.ValueInt64()))
+		generalApp.CpuReservation = json.Number(plan.CpuReservation.ValueString())
 	}
 	if !plan.Command.IsNull() && !plan.Command.IsUnknown() {
 		generalApp.Command = plan.Command.ValueString()
@@ -1729,24 +1729,16 @@ func readApplicationIntoState(state *ApplicationResourceModel, app *client.Appli
 		state.Replicas = types.Int64Value(int64(app.Replicas))
 	}
 	if app.MemoryLimit != "" {
-		if val, err := app.MemoryLimit.Int64(); err == nil {
-			state.MemoryLimit = types.Int64Value(val)
-		}
+		state.MemoryLimit = types.StringValue(string(app.MemoryLimit))
 	}
 	if app.MemoryReservation != "" {
-		if val, err := app.MemoryReservation.Int64(); err == nil {
-			state.MemoryReservation = types.Int64Value(val)
-		}
+		state.MemoryReservation = types.StringValue(string(app.MemoryReservation))
 	}
 	if app.CpuLimit != "" {
-		if val, err := app.CpuLimit.Int64(); err == nil {
-			state.CpuLimit = types.Int64Value(val)
-		}
+		state.CpuLimit = types.StringValue(string(app.CpuLimit))
 	}
 	if app.CpuReservation != "" {
-		if val, err := app.CpuReservation.Int64(); err == nil {
-			state.CpuReservation = types.Int64Value(val)
-		}
+		state.CpuReservation = types.StringValue(string(app.CpuReservation))
 	}
 	if app.Command != "" {
 		state.Command = types.StringValue(app.Command)
