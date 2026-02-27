@@ -4930,17 +4930,18 @@ type BitbucketProviderListItem struct {
 
 // BitbucketProvider is the full structure used for create/update operations.
 type BitbucketProvider struct {
-	ID                     string `json:"bitbucketId"`
-	GitProviderId          string `json:"gitProviderId"`
-	Name                   string `json:"name"`
-	BitbucketUsername      string `json:"bitbucketUsername"`
-	BitbucketEmail         string `json:"bitbucketEmail"`
-	AppPassword            string `json:"appPassword"`
-	ApiToken               string `json:"apiToken"`
-	BitbucketWorkspaceName string `json:"bitbucketWorkspaceName"`
-	AuthId                 string `json:"authId"`
-	OrganizationID         string `json:"organizationId"`
-	CreatedAt              string `json:"createdAt"`
+	ID                     string          `json:"bitbucketId"`
+	GitProviderId          string          `json:"gitProviderId"`
+	GitProvider            GitProviderInfo `json:"gitProvider"`
+	Name                   string          `json:"name"`
+	BitbucketUsername      string          `json:"bitbucketUsername"`
+	BitbucketEmail         string          `json:"bitbucketEmail"`
+	AppPassword            string          `json:"appPassword"`
+	ApiToken               string          `json:"apiToken"`
+	BitbucketWorkspaceName string          `json:"bitbucketWorkspaceName"`
+	AuthId                 string          `json:"authId"`
+	OrganizationID         string          `json:"organizationId"`
+	CreatedAt              string          `json:"createdAt"`
 }
 
 func (c *DokployClient) CreateBitbucketProvider(provider BitbucketProvider) (*BitbucketProvider, error) {
@@ -4973,6 +4974,9 @@ func (c *DokployClient) CreateBitbucketProvider(provider BitbucketProvider) (*Bi
 	// Try to unmarshal the response
 	var result BitbucketProvider
 	if err := json.Unmarshal(resp, &result); err == nil && result.ID != "" {
+		if result.GitProviderId == "" && result.GitProvider.GitProviderId != "" {
+			result.GitProviderId = result.GitProvider.GitProviderId
+		}
 		return &result, nil
 	}
 
@@ -4981,6 +4985,9 @@ func (c *DokployClient) CreateBitbucketProvider(provider BitbucketProvider) (*Bi
 		BitbucketProvider BitbucketProvider `json:"bitbucket"`
 	}
 	if err := json.Unmarshal(resp, &wrapper); err == nil && wrapper.BitbucketProvider.ID != "" {
+		if wrapper.BitbucketProvider.GitProviderId == "" && wrapper.BitbucketProvider.GitProvider.GitProviderId != "" {
+			wrapper.BitbucketProvider.GitProviderId = wrapper.BitbucketProvider.GitProvider.GitProviderId
+		}
 		return &wrapper.BitbucketProvider, nil
 	}
 
@@ -5012,6 +5019,20 @@ func (c *DokployClient) GetBitbucketProvider(id string) (*BitbucketProvider, err
 	var result BitbucketProvider
 	if err := json.Unmarshal(resp, &result); err != nil {
 		return nil, err
+	}
+	// The bitbucket.one endpoint may return gitProviderId nested in a gitProvider object.
+	// Fall back to the nested value when the top-level field is empty.
+	if result.GitProviderId == "" && result.GitProvider.GitProviderId != "" {
+		result.GitProviderId = result.GitProvider.GitProviderId
+	}
+	if result.Name == "" && result.GitProvider.Name != "" {
+		result.Name = result.GitProvider.Name
+	}
+	if result.OrganizationID == "" && result.GitProvider.OrganizationID != "" {
+		result.OrganizationID = result.GitProvider.OrganizationID
+	}
+	if result.CreatedAt == "" && result.GitProvider.CreatedAt != "" {
+		result.CreatedAt = result.GitProvider.CreatedAt
 	}
 	return &result, nil
 }
@@ -5099,22 +5120,24 @@ type GiteaProviderListItem struct {
 
 // GiteaProvider is the full structure used for create/update operations.
 type GiteaProvider struct {
-	ID                  string `json:"giteaId"`
-	GitProviderId       string `json:"gitProviderId"`
-	Name                string `json:"name"`
-	GiteaUrl            string `json:"giteaUrl"`
-	RedirectUri         string `json:"redirectUri"`
-	ClientId            string `json:"clientId"`
-	ClientSecret        string `json:"clientSecret"`
-	AccessToken         string `json:"accessToken"`
-	RefreshToken        string `json:"refreshToken"`
-	ExpiresAt           int64  `json:"expiresAt"`
-	Scopes              string `json:"scopes"`
-	LastAuthenticatedAt int64  `json:"lastAuthenticatedAt"`
-	GiteaUsername       string `json:"giteaUsername"`
-	OrganizationName    string `json:"organizationName"`
-	OrganizationID      string `json:"organizationId"`
-	CreatedAt           string `json:"createdAt"`
+	ID                  string          `json:"giteaId"`
+	GitProviderId       string          `json:"gitProviderId"`
+	GitProvider         GitProviderInfo `json:"gitProvider"`
+	Name                string          `json:"name"`
+	GiteaUrl            string          `json:"giteaUrl"`
+	GiteaInternalUrl    string          `json:"giteaInternalUrl"`
+	RedirectUri         string          `json:"redirectUri"`
+	ClientId            string          `json:"clientId"`
+	ClientSecret        string          `json:"clientSecret"`
+	AccessToken         string          `json:"accessToken"`
+	RefreshToken        string          `json:"refreshToken"`
+	ExpiresAt           int64           `json:"expiresAt"`
+	Scopes              string          `json:"scopes"`
+	LastAuthenticatedAt int64           `json:"lastAuthenticatedAt"`
+	GiteaUsername       string          `json:"giteaUsername"`
+	OrganizationName    string          `json:"organizationName"`
+	OrganizationID      string          `json:"organizationId"`
+	CreatedAt           string          `json:"createdAt"`
 }
 
 func (c *DokployClient) CreateGiteaProvider(provider GiteaProvider) (*GiteaProvider, error) {
@@ -5153,6 +5176,9 @@ func (c *DokployClient) CreateGiteaProvider(provider GiteaProvider) (*GiteaProvi
 	if provider.OrganizationName != "" {
 		payload["organizationName"] = provider.OrganizationName
 	}
+	if provider.GiteaInternalUrl != "" {
+		payload["giteaInternalUrl"] = provider.GiteaInternalUrl
+	}
 
 	resp, err := c.doRequest("POST", "gitea.create", payload)
 	if err != nil {
@@ -5162,6 +5188,9 @@ func (c *DokployClient) CreateGiteaProvider(provider GiteaProvider) (*GiteaProvi
 	// Try to unmarshal the response
 	var result GiteaProvider
 	if err := json.Unmarshal(resp, &result); err == nil && result.ID != "" {
+		if result.GitProviderId == "" && result.GitProvider.GitProviderId != "" {
+			result.GitProviderId = result.GitProvider.GitProviderId
+		}
 		return &result, nil
 	}
 
@@ -5170,6 +5199,9 @@ func (c *DokployClient) CreateGiteaProvider(provider GiteaProvider) (*GiteaProvi
 		GiteaProvider GiteaProvider `json:"gitea"`
 	}
 	if err := json.Unmarshal(resp, &wrapper); err == nil && wrapper.GiteaProvider.ID != "" {
+		if wrapper.GiteaProvider.GitProviderId == "" && wrapper.GiteaProvider.GitProvider.GitProviderId != "" {
+			wrapper.GiteaProvider.GitProviderId = wrapper.GiteaProvider.GitProvider.GitProviderId
+		}
 		return &wrapper.GiteaProvider, nil
 	}
 
@@ -5202,18 +5234,32 @@ func (c *DokployClient) GetGiteaProvider(id string) (*GiteaProvider, error) {
 	if err := json.Unmarshal(resp, &result); err != nil {
 		return nil, err
 	}
+	// The gitea.one endpoint may return gitProviderId nested in a gitProvider object.
+	// Fall back to the nested value when the top-level field is empty.
+	if result.GitProviderId == "" && result.GitProvider.GitProviderId != "" {
+		result.GitProviderId = result.GitProvider.GitProviderId
+	}
+	if result.Name == "" && result.GitProvider.Name != "" {
+		result.Name = result.GitProvider.Name
+	}
+	if result.OrganizationID == "" && result.GitProvider.OrganizationID != "" {
+		result.OrganizationID = result.GitProvider.OrganizationID
+	}
+	if result.CreatedAt == "" && result.GitProvider.CreatedAt != "" {
+		result.CreatedAt = result.GitProvider.CreatedAt
+	}
 	return &result, nil
 }
 
 func (c *DokployClient) UpdateGiteaProvider(provider GiteaProvider) (*GiteaProvider, error) {
+	// giteaId, giteaUrl, gitProviderId, name are required by the API.
 	payload := map[string]interface{}{
-		"giteaId": provider.ID,
-		"name":    provider.Name,
+		"giteaId":       provider.ID,
+		"name":          provider.Name,
+		"giteaUrl":      provider.GiteaUrl,
+		"gitProviderId": provider.GitProviderId,
 	}
 
-	if provider.GiteaUrl != "" {
-		payload["giteaUrl"] = provider.GiteaUrl
-	}
 	if provider.RedirectUri != "" {
 		payload["redirectUri"] = provider.RedirectUri
 	}
@@ -5244,8 +5290,8 @@ func (c *DokployClient) UpdateGiteaProvider(provider GiteaProvider) (*GiteaProvi
 	if provider.OrganizationName != "" {
 		payload["organizationName"] = provider.OrganizationName
 	}
-	if provider.GitProviderId != "" {
-		payload["gitProviderId"] = provider.GitProviderId
+	if provider.GiteaInternalUrl != "" {
+		payload["giteaInternalUrl"] = provider.GiteaInternalUrl
 	}
 
 	resp, err := c.doRequest("POST", "gitea.update", payload)
