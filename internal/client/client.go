@@ -4778,6 +4778,26 @@ func (c *DokployClient) GetGitlabProvider(id string) (*GitlabProvider, error) {
 	if err := json.Unmarshal(resp, &result); err != nil {
 		return nil, err
 	}
+
+	// If name is empty, the API may return it nested under gitProvider
+	if result.Name == "" {
+		var nested struct {
+			GitProvider GitProviderInfo `json:"gitProvider"`
+		}
+		if json.Unmarshal(resp, &nested) == nil && nested.GitProvider.Name != "" {
+			result.Name = nested.GitProvider.Name
+			if result.GitProviderId == "" {
+				result.GitProviderId = nested.GitProvider.GitProviderId
+			}
+			if result.OrganizationID == "" {
+				result.OrganizationID = nested.GitProvider.OrganizationID
+			}
+			if result.CreatedAt == "" {
+				result.CreatedAt = nested.GitProvider.CreatedAt
+			}
+		}
+	}
+
 	return &result, nil
 }
 
